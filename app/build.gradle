@@ -3,7 +3,6 @@ plugins {
     id 'kotlin-android'
     id 'com.google.devtools.ksp'
     id 'com.google.gms.google-services'
-    id 'com.google.firebase.crashlytics'
 }
 repositories {
     mavenCentral()
@@ -62,11 +61,9 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            manifestPlaceholders = [crashlyticsCollectionEnabled: "true"]
         }
 
         debug {
-            manifestPlaceholders = [crashlyticsCollectionEnabled: "false"]
             versionNameSuffix "-dev"
         }
     }
@@ -97,9 +94,6 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:34.6.0')
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-config'
-    implementation 'com.google.firebase:firebase-analytics'
-    // Add the Firebase Crashlytics SDK.
-    implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.android.play:app-update-ktx:2.1.0'
     implementation 'com.google.guava:guava:33.5.0-android'
     implementation 'androidx.navigation:navigation-fragment-ktx:2.9.6'

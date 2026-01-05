@@ -19,7 +19,6 @@ import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import de.blinkt.openvpn.core.OpenVPNService
 import kittoku.osc.preference.OscPrefKey
@@ -67,9 +66,6 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
         )
         spinnerInit.onItemSelectedIndexListener = object : OnItemSelectedIndexListener {
             override fun onItemSelected(name: String?, index: Int) {
-                val params = Bundle()
-                params.putString("selected_cache_value", listCacheTime[index])
-                FirebaseAnalytics.getInstance(mContext).logEvent("Change_Cache_Time_Setting", params)
                 dataUtil.setIntSetting(DataUtil.SETTING_CACHE_TIME_KEY, index)
             }
         }
@@ -102,177 +98,6 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
         )
         spinnerInitProto.onItemSelectedIndexListener = object : OnItemSelectedIndexListener {
             override fun onItemSelected(name: String?, index: Int) {
-                val params = Bundle()
-                params.putString("selected_protocol", listProtocol[index])
-                FirebaseAnalytics.getInstance(mContext)
-                    .logEvent("Change_Default_Protocol_Setting", params)
-                dataUtil.setIntSetting(DataUtil.SETTING_DEFAULT_PROTOCOL, index)
-            }
-
-        }
-        binding.lnNotifySpeed.setOnClickListener(this)
-        binding.swNotifySpeed.setChecked(dataUtil.getBooleanSetting(DataUtil.SETTING_NOTIFY_SPEED, true))
-        binding.swNotifySpeed.setOnCheckedChangeListener(this)
-        if (dataUtil.lastVPNConnection != null) {
-            binding.lnStartupScreen.visibility = View.VISIBLE
-            val listScreen = resources.getStringArray(R.array.startup_screen)
-            val spinnerInitScreen = SpinnerInit(context, binding.spinScreen)
-            spinnerInitScreen.setStringArray(
-                listScreen,
-                listScreen[dataUtil.getIntSetting(DataUtil.SETTING_STARTUP_SCREEN, 0)]
-            )
-            spinnerInitScreen.onItemSelectedIndexListener = object : OnItemSelectedIndexListener {
-                override fun onItemSelected(name: String?, index: Int) {
-                    val params = Bundle()
-                    params.putString("selected_screen", listScreen[index])
-                    FirebaseAnalytics.getInstance(mContext)
-                        .logEvent("Change_StartUp_Screen_Setting", params)
-                    dataUtil.setIntSetting(DataUtil.SETTING_STARTUP_SCREEN, index)
-                    OpenVPNService.setNotificationActivityClass(if (index == 0) DetailActivity::class.java else MainActivity::class.java)
-                }
-
-            }
-        } else {
-            binding.lnStartupScreen.visibility = View.GONE
-        }
-
-        return binding.root
-    }
-
-    private val ipInputFilters: Array<InputFilter?>
-        get() {
-            val filters = arrayOfNulls<InputFilter>(1)
-            filters[0] =
-                InputFilter { source: CharSequence, start: Int, end: Int, dest: Spanned, dstart: Int, dend: Int ->
-                    if (end > start) {
-                        val destTxt = dest.toString()
-                        val resultingTxt = destTxt.substring(0, dstart) + source.subSequence(
-                            start,
-                            end
-                        ) + destTxt.substring(dend)
-                        if (!resultingTxt.matches("^\\d{1,3}(\\.(\\d{1,3}(\\.(\\d{1,3}(\\.(\\d{1,3})?)?)?)?)?)?".toRegex())) {
-                            return@InputFilter ""
-                        } else {
-                            val splits =
-                                resultingTxt.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }
-                                    .toTypedArray()
-                            for (`val` in splits) {
-                                if (`val`.toInt() > 255) {
-                                    return@InputFilter ""
-                                }
-                            }
-                        }
-                    }
-                    null
-                }
-            return filters
-        }
-
-    override fun onFocusChange(view: View, isFocus: Boolean) {
-        if (!isFocus) {
-            val dnsIP: String
-            val settingKey: String
-            if (view == binding.txtDns1) {
-                dnsIP = binding.txtDns1.text.toString()
-                settingKey = DataUtil.CUSTOM_DNS_IP_1
-            } else {
-                dnsIP = binding.txtDns2.text.toString()
-                settingKey = DataUtil.CUSTOM_DNS_IP_2
-            }
-            val isValidIp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                isNumericAddress(dnsIP)
-            } else {
-                @Suppress("DEPRECATION")
-                Patterns.IP_ADDRESS.matcher(dnsIP).matches()
-            }
-            if (isValidIp) {
-                dataUtil.setStringSetting(settingKey, dnsIP)
-                if (settingKey == DataUtil.CUSTOM_DNS_IP_1) {
-                    val editor = prefs.edit()
-                    editor.putString(OscPrefKey.DNS_CUSTOM_ADDRESS.toString(), dnsIP)
-                    editor.apply()
-                }
-            }
-        }
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        mContext = context
-    }
-
-    override fun onHiddenChanged(hidden: Boolean) {
-        if (!hidden) {
-            if (dataUtil.connectionCacheExpires == null) {
-                binding.lnClearCache.visibility = View.GONE
-            } else {
-                binding.lnClearCache.visibility = View.VISIBLE
-                binding.txtCacheExpire.text =
-                    dataUtil.connectionCacheExpires?.let {
-                        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(
-                            it
-                        )
-                    }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (App.isImportToOpenVPN) {
-            binding.lnDnsWrap.visibility = View.GONE
-        } else {
-            binding.lnDnsWrap.visibility = View.VISIBLE
-        }
-    }
-
-    private fun clearListServerCache(showToast: Boolean) {
-        val activity = activity as MainActivity?
-        if (dataUtil.clearConnectionCache()) {
-            if (showToast) {
-                Toast.makeText(
-                    activity,
-                    resources.getString(R.string.setting_clear_cache_success),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            binding.lnClearCache.visibility = View.GONE
-            sendClearCache()
-        } else if (showToast) {
-            Toast.makeText(
-                activity,
-                resources.getString(R.string.setting_clear_cache_error),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
-    override fun onClick(view: View) {
-        when(view) {
-            binding.btnClearCache -> clearListServerCache(true)
-            binding.lnUdp ->  binding.swUdp.isChecked = !binding.swUdp.isChecked
-            binding.lnDns -> binding.swDns.isChecked = !binding.swDns.isChecked
-            binding.lnDomain -> binding.swDomain.isChecked = !binding.swDomain.isChecked
-            binding.lnNotifySpeed -> binding.swNotifySpeed.isChecked = !binding.swNotifySpeed.isChecked
-        }
-    }
-
-    private fun hideKeyBroad() {
-        val imm = mContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(
-            binding.txtDns1.windowToken,
-            InputMethodManager.HIDE_IMPLICIT_ONLY
-        )
-    }
-
-    override fun onCheckedChanged(switchCompat: CompoundButton, isChecked: Boolean) {
-        val params = Bundle()
-        params.putString("enabled", isChecked.toString() + "")
-        if (switchCompat == binding.swUdp) {
-            dataUtil.setBooleanSetting(DataUtil.INCLUDE_UDP_SERVER, isChecked)
-            binding.lnDefaultProtocol.visibility = if (isChecked) View.VISIBLE else View.GONE
-            clearListServerCache(false)
-            FirebaseAnalytics.getInstance(mContext).logEvent("Change_Include_UDP_Setting", params)
             return
         }
         val editor = prefs.edit()
@@ -292,13 +117,10 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
                 editor.putBoolean(OscPrefKey.DNS_DO_USE_CUSTOM_SERVER.toString(), false)
             }
             editor.apply()
-            FirebaseAnalytics.getInstance(mContext).logEvent("Change_Custom_DNS_Setting", params)
             return
         }
         if (switchCompat == binding.swDomain) {
             dataUtil.setBooleanSetting(DataUtil.USE_DOMAIN_TO_CONNECT, isChecked)
-            FirebaseAnalytics.getInstance(mContext)
-                .logEvent("Change_Use_Domain_To_Connect_Setting", params)
             return
         }
         if (switchCompat == binding.swNotifySpeed) {
@@ -308,8 +130,6 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
                 Toast.LENGTH_SHORT
             ).show()
             dataUtil.setBooleanSetting(DataUtil.SETTING_NOTIFY_SPEED, isChecked)
-            FirebaseAnalytics.getInstance(mContext)
-                .logEvent("Change_Notify_Speed_Setting", params)
             return
         }
         if (dataUtil.hasAds() && isChecked) {

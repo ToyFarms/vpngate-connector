@@ -30,7 +30,6 @@ import androidx.fragment.app.commit
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationView
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -341,10 +340,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
                         HomeFragment::class.java.name
                     ) as HomeFragment?
                     if (currentFragment != null) {
-                        val params = Bundle()
-                        params.putString(FirebaseAnalytics.Param.SEARCH_TERM, newText)
-                        FirebaseAnalytics.getInstance(applicationContext)
-                            .logEvent(FirebaseAnalytics.Event.SEARCH, params)
                         currentFragment.filter(newText)
                         return true
                     }
@@ -412,13 +407,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
                         HomeFragment::class.java.name
                     ) as HomeFragment?
                     if (currentFragment != null) {
-                        val params = Bundle()
-                        params.putString("property", this@MainActivity.sortProperty)
-                        params.putString(
-                            "type",
-                            if (this@MainActivity.sortType == VPNGateConnectionList.ORDER.ASC) "ASC" else "DESC"
-                        )
-                        FirebaseAnalytics.getInstance(applicationContext).logEvent("Sort", params)
                         currentFragment.sort(
                             this@MainActivity.sortProperty,
                             this@MainActivity.sortType
@@ -448,10 +436,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
                             HomeFragment::class.java.name
                         ) as HomeFragment?
                         if (homeFragment != null && vpnGateConnectionList != null) {
-                            val params = Bundle()
-                            params.putString("filterObj", Gson().toJson(filter))
-                            FirebaseAnalytics.getInstance(applicationContext)
-                                .logEvent("Filter", params)
                             vpnGateConnectionList!!.filter = filter
                             homeFragment.advanceFilter(filter)
                         }
@@ -484,9 +468,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
         }
         selectedMenuItem = menuItem
         disallowLoadHome = true
-        val params = Bundle()
-        params.putString("title", Objects.requireNonNull(menuItem.title).toString())
-        FirebaseAnalytics.getInstance(applicationContext).logEvent("Drawer_Select", params)
         when (menuItem.itemId) {
             R.id.nav_get_pro -> {
                 if (dataUtil!!.hasAds() && dataUtil!!.hasProInstalled()) {
@@ -747,9 +728,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
     }
 
     fun onError(error: String?) {
-        val params = Bundle()
-        params.putString("screen", "home")
-        FirebaseAnalytics.getInstance(applicationContext).logEvent("Error", params)
         binding.frameContent.visibility = View.GONE
         binding.incLoading.lnLoading.visibility = View.GONE
         binding.incError.lnError.visibility = View.VISIBLE

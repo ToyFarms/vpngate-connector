@@ -31,7 +31,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import de.blinkt.openvpn.VpnProfile
 import de.blinkt.openvpn.core.ConfigParser
@@ -165,12 +164,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
             mVpnGateConnection = dataUtil.lastVPNConnection
             loadVpnProfile(dataUtil.getBooleanSetting(DataUtil.LAST_CONNECT_USE_UDP, false))
             try {
-                val params = Bundle()
-                params.putString("from", "Notification")
-                params.putString("ip", mVpnGateConnection!!.ip)
-                params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                params.putString("country", mVpnGateConnection!!.countryLong)
-                FirebaseAnalytics.getInstance(applicationContext).logEvent("Open_Detail", params)
             } catch (ex: NullPointerException) {
                 Log.e(TAG, "onCreate error", ex)
             }
@@ -272,12 +265,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
                     ConnectionStatus.LEVEL_AUTH_FAILED -> {
                         isAuthFailed = true
                         binding.btnConnect.text = getString(R.string.retry_connect)
-                        val params = Bundle()
-                        params.putString("ip", mVpnGateConnection!!.ip)
-                        params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                        params.putString("country", mVpnGateConnection!!.countryLong)
-                        FirebaseAnalytics.getInstance(applicationContext)
-                            .logEvent("Connect_Error", params)
                         binding.btnConnect.background = ResourcesCompat.getDrawable(
                             resources, R.drawable.selector_primary_button, null
                         )
@@ -456,21 +443,9 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
         }
         if (checkStatus()) {
             stopVpn()
-            val params = Bundle()
-            params.putString("type", "replace current")
-            params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-            params.putString("ip", mVpnGateConnection!!.ip)
-            params.putString("country", mVpnGateConnection!!.countryLong)
-            FirebaseAnalytics.getInstance(applicationContext).logEvent("Connect_VPN", params)
             binding.txtCheckIp.visibility = View.GONE
             Handler(Looper.getMainLooper()).postDelayed({ prepareVpn(useUdp) }, 500)
         } else {
-            val params = Bundle()
-            params.putString("type", "connect new")
-            params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-            params.putString("ip", mVpnGateConnection!!.ip)
-            params.putString("country", mVpnGateConnection!!.countryLong)
-            FirebaseAnalytics.getInstance(applicationContext).logEvent("Connect_VPN", params)
             prepareVpn(useUdp)
         }
         binding.btnConnect.background = ResourcesCompat.getDrawable(
@@ -495,13 +470,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
             if (view == binding.btnConnect) {
                 if (!isConnecting) {
                     if (checkStatus() && isCurrent) {
-                        val params = Bundle()
-                        params.putString("type", "disconnect current")
-                        params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                        params.putString("ip", mVpnGateConnection!!.ip)
-                        params.putString("country", mVpnGateConnection!!.countryLong)
-                        FirebaseAnalytics.getInstance(applicationContext)
-                            .logEvent("Disconnect_VPN", params)
                         stopVpn()
                         binding.btnConnect.background =
                             resources.getDrawable(R.drawable.selector_primary_button, resources.newTheme())
@@ -549,12 +517,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
                         handleConnection(false)
                     }
                 } else {
-                    val params = Bundle()
-                    params.putString("type", "cancel connect to vpn")
-                    params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                    params.putString("ip", mVpnGateConnection!!.ip)
-                    params.putString("country", mVpnGateConnection!!.countryLong)
-                    FirebaseAnalytics.getInstance(applicationContext).logEvent("Cancel_VPN", params)
                     stopVpn()
                     binding.btnConnect.background =
                         resources.getDrawable(R.drawable.selector_primary_button, resources.newTheme())
@@ -563,25 +525,12 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
                     isConnecting = false
                 }
             } else if (view == binding.txtCheckIp) {
-                val params = Bundle()
-                params.putString("type", "check ip click")
-                params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                params.putString("ip", mVpnGateConnection!!.ip)
-                params.putString("country", mVpnGateConnection!!.countryLong)
-                FirebaseAnalytics.getInstance(applicationContext).logEvent("Click_Check_IP", params)
                 val browserIntent = Intent(
                     Intent.ACTION_VIEW,
                     FirebaseRemoteConfig.getInstance().getString("vpn_check_ip_url").toUri()
                 )
                 startActivity(browserIntent)
             } else if (view == binding.btnL2tpConnect) {
-                val params = Bundle()
-                params.putString("type", "connect via L2TP")
-                params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                params.putString("ip", mVpnGateConnection!!.ip)
-                params.putString("country", mVpnGateConnection!!.countryLong)
-                FirebaseAnalytics.getInstance(applicationContext)
-                    .logEvent("Connect_Via_L2TP", params)
                 val l2tpIntent = Intent(this, L2TPConnectActivity::class.java)
                 l2tpIntent.putExtra(BaseProvider.PASS_DETAIL_VPN_CONNECTION, mVpnGateConnection)
                 startActivity(l2tpIntent)
@@ -683,186 +632,3 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
 
     private fun handleSSTPBtn() {
         isSSTPConnectOrDisconnecting = true
-        val params = Bundle()
-        params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-        params.putString("ip", mVpnGateConnection!!.ip)
-        params.putString("country", mVpnGateConnection!!.countryLong)
-        val sstpHostName = prefs.getString(OscPrefKey.HOME_HOSTNAME.toString(), "")
-        if (isSSTPConnected && sstpHostName != mVpnGateConnection!!.calculateHostName) {
-            // Connected but not must disconnect old first
-            startVpnSSTPService(ACTION_VPN_DISCONNECT)
-            params.putString("type", "replace connect via MS-SSTP")
-            binding.txtCheckIp.visibility = View.GONE
-            Handler(mainLooper).postDelayed({ this.connectSSTPVPN() }, 100)
-        } else if (!isSSTPConnected) {
-            params.putString("type", "connect via MS-SSTP")
-            FirebaseAnalytics.getInstance(applicationContext).logEvent("Connect_Via_SSTP", params)
-            dataUtil.lastVPNConnection = mVpnGateConnection
-            startSSTPVPN()
-        } else {
-            params.putString("type", "cancel MS-SSTP")
-            FirebaseAnalytics.getInstance(applicationContext).logEvent("Cancel_Via_SSTP", params)
-            startVpnSSTPService(ACTION_VPN_DISCONNECT)
-            binding.btnSstpConnect.background = ResourcesCompat.getDrawable(
-                resources,
-                R.drawable.selector_paid_button,
-                null
-            )
-            binding.btnSstpConnect.setText(R.string.connect_via_sstp)
-            binding.txtStatus.setText(R.string.sstp_disconnecting)
-        }
-    }
-
-
-
-    private fun sendConnectVPN() {
-        val intent = Intent(BaseProvider.ACTION.ACTION_CONNECT_VPN)
-        sendBroadcast(intent)
-    }
-
-    private fun prepareVpn(useUdp: Boolean) {
-        if (loadVpnProfile(useUdp)) {
-            startOpenVpn()
-        } else {
-            Toast.makeText(this, getString(R.string.error_load_profile), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun loadVpnProfile(useUDP: Boolean): Boolean {
-        val data = if (useUDP) {
-            mVpnGateConnection!!.openVpnConfigDataUdp!!.toByteArray()
-        } else {
-            mVpnGateConnection!!.getOpenVpnConfigDataString()!!.toByteArray()
-        }
-        dataUtil.setBooleanSetting(DataUtil.LAST_CONNECT_USE_UDP, useUDP)
-        val cp = ConfigParser()
-        val isr = InputStreamReader(ByteArrayInputStream(data))
-        try {
-            cp.parseConfig(isr)
-            vpnProfile = cp.convertProfile()
-            vpnProfile.mName = mVpnGateConnection!!.getName(useUDP)
-            vpnProfile.mCompatMode = App.VPN_PROFILE_COMPAT_MODE_24X
-            if (dataUtil.getBooleanSetting(DataUtil.USE_CUSTOM_DNS, false)) {
-                vpnProfile.mOverrideDNS = true
-                vpnProfile.mDNS1 = dataUtil.getStringSetting(DataUtil.CUSTOM_DNS_IP_1, "8.8.8.8")
-                val dns2 = dataUtil.getStringSetting(DataUtil.CUSTOM_DNS_IP_2, null)
-                if (dns2 != null) {
-                    vpnProfile.mDNS2 = dns2
-                }
-            }
-            ProfileManager.setTemporaryProfile(applicationContext, vpnProfile)
-        } catch (e: IOException) {
-            Log.e(TAG, "loadVpnProfile error", e)
-            return false
-        } catch (e: ConfigParseError) {
-            Log.e(TAG, "loadVpnProfile error", e)
-            return false
-        }
-
-        return true
-    }
-
-    private fun checkStatus(): Boolean {
-        try {
-            return VpnStatus.isVPNActive()
-        } catch (e: Exception) {
-            Log.e(TAG, "checkStatus error", e)
-        }
-
-        return false
-    }
-
-    private fun stopVpn() {
-        //prepareStopVPN();
-        ProfileManager.setConntectedVpnProfileDisconnected(this)
-        if (mVPNService != null) {
-            try {
-                mVPNService!!.stopVPN(false)
-            } catch (e: RemoteException) {
-                VpnStatus.logException(e)
-            }
-        }
-    }
-
-    private val startActivityIntentOpenVPN: ActivityResultLauncher<Intent> = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        handleActivityResult(START_VPN_PROFILE, it.resultCode)
-    }
-
-    private fun startOpenVpn() {
-        val intent = VpnService.prepare(this)
-
-        if (intent != null) {
-            VpnStatus.updateStateString(
-                "USER_VPN_PERMISSION", "", R.string.state_user_vpn_permission,
-                ConnectionStatus.LEVEL_WAITING_FOR_USER_INPUT
-            )
-            // Start the query
-            try {
-                startActivityIntentOpenVPN.launch(intent)
-            } catch (_: ActivityNotFoundException) {
-                // Shame on you Sony! At least one user reported that
-                // an official Sony Xperia Arc S image triggers this exception
-                VpnStatus.logError(de.blinkt.openvpn.R.string.no_vpn_support_image)
-            }
-        } else {
-            handleActivityResult(START_VPN_PROFILE, RESULT_OK)
-        }
-    }
-
-    private fun handleActivityResult(requestCode: Int, resultCode: Int) {
-        try {
-            if (resultCode == RESULT_OK) {
-                if (requestCode == START_VPN_PROFILE) {
-                    VPNLaunchHelper.startOpenVpn(vpnProfile, baseContext, null, true)
-                }
-                if (requestCode == START_VPN_SSTP) {
-                    connectSSTPVPN()
-                }
-                NotificationUtil(this).requestPermission()
-                dataUtil.setBooleanSetting(DataUtil.USER_ALLOWED_VPN, true)
-            } else {
-                dataUtil.setBooleanSetting(DataUtil.USER_ALLOWED_VPN, false)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "handleActivityResult error", e)
-        }
-    }
-
-    override fun updateByteCount(`in`: Long, out: Long, diffIn: Long, diffOut: Long) {
-        if (!isCurrent) {
-            return
-        }
-        runOnUiThread {
-            val netstat = String.format(
-                getString(de.blinkt.openvpn.R.string.statusline_bytecount),
-                OpenVPNService.humanReadableByteCount(`in`, false, resources),
-                OpenVPNService.humanReadableByteCount(
-                    diffIn / OpenVPNManagement.mBytecountInterval,
-                    true,
-                    resources
-                ),
-                OpenVPNService.humanReadableByteCount(out, false, resources),
-                OpenVPNService.humanReadableByteCount(
-                    diffOut / OpenVPNManagement.mBytecountInterval,
-                    true,
-                    resources
-                )
-            )
-            binding.txtNetStats.text = netstat
-        }
-    }
-
-    companion object {
-        const val TYPE_FROM_NOTIFY: Int = 1001
-        const val TYPE_NORMAL: Int = 1000
-        const val TYPE_START: String = "vn.ulimit.vpngate.TYPE_START"
-        const val START_VPN_PROFILE: Int = 70
-        const val START_VPN_SSTP: Int = 80
-        const val ACTION_VPN_CONNECT: String = "kittoku.osc.connect"
-        const val ACTION_VPN_DISCONNECT: String = "kittoku.osc.disconnect"
-        private const val TAG = "DetailActivity"
-        private var mVPNService: IOpenVPNServiceInternal? = null
-    }
-}

@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.room.Room
 import com.google.android.gms.security.ProviderInstaller
 import com.google.android.gms.tasks.Task
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import de.blinkt.openvpn.core.OpenVPNService
 import vn.unlimit.vpngate.activities.DetailActivity
@@ -28,10 +27,6 @@ class App : Application() {
         super.onCreate()
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "vpn_gate_connector").build()
         vpnGateItemDao = appDatabase.vpnGateItemDao()
-        if (!BuildConfig.DEBUG) {
-            // OPTIONAL: If crash reporting has been explicitly disabled previously, add:
-            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
-        }
         instance = this
         dataUtil = DataUtil(this)
         // Make notification open DetailActivity

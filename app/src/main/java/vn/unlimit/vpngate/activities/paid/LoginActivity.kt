@@ -8,7 +8,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
-import com.google.firebase.analytics.FirebaseAnalytics
 import vn.unlimit.vpngate.App
 import vn.unlimit.vpngate.R
 import vn.unlimit.vpngate.activities.MainActivity
@@ -73,86 +72,8 @@ class LoginActivity : EdgeToEdgeActivity(), View.OnClickListener {
                             getString(R.string.login_failed)
                         }
                     Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
-                    val params = Bundle()
-                    params.putString("username", binding.txtUsername.text.toString())
-                    params.putString("errorMsg", errorMsg)
-                    FirebaseAnalytics.getInstance(this).logEvent("Paid_Server_Login_Failed", params)
                 } else {
                     paidServerUtil.setStringSetting(
                         PaidServerUtil.SAVED_VPN_PW,
                         binding.txtPassword.text.toString()
                     )
-                    val params = Bundle()
-                    params.putString("username", binding.txtUsername.text.toString())
-                    FirebaseAnalytics.getInstance(this)
-                        .logEvent("Paid_Server_Login_Success", params)
-                    // Go to paid home screen
-                    val paidIntent = Intent(this, PaidServerActivity::class.java)
-                    paidIntent.putExtra(BaseProvider.FROM_LOGIN, true)
-                    startActivity(paidIntent)
-                    finish()
-                }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (!binding.txtPassword.isFocused) {
-            binding.txtUsername.requestFocus()
-        }
-    }
-
-    override fun onClick(v: View?) {
-        when (v) {
-            binding.btnBackToFree -> backToFree()
-            binding.btnLogin -> {
-                if (binding.txtUsername.text.isEmpty() || binding.txtPassword.text.isEmpty()) {
-                    Toast.makeText(
-                        this,
-                        R.string.username_and_password_is_required,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return
-                }
-                isClickedLogin = true
-                userViewModel!!.login(binding.txtUsername.text.toString(), binding.txtPassword.text.toString())
-            }
-
-            binding.ivHidePassword -> {
-                if (binding.txtPassword.inputType == InputType.TYPE_TEXT_VARIATION_PASSWORD || isFirstTimeHidePass) {
-                    binding.txtPassword.inputType = InputType.TYPE_CLASS_TEXT
-                    binding.txtPassword.transformationMethod = null
-                    Glide.with(this).load(R.drawable.ic_eye_hide).into(binding.ivHidePassword)
-                    isFirstTimeHidePass = false
-                } else {
-                    binding.txtPassword.inputType = InputType.TYPE_TEXT_VARIATION_PASSWORD
-                    binding.txtPassword.transformationMethod = PasswordTransformationMethod.getInstance()
-                    Glide.with(this).load(R.drawable.ic_eye_show).into(binding.ivHidePassword)
-                }
-                binding.txtPassword.setSelection(binding.txtPassword.text.length)
-            }
-
-            binding.btnSignUp -> {
-                val intentSignUp = Intent(this, SignUpActivity::class.java)
-                startActivity(intentSignUp)
-            }
-
-            binding.btnForgotPass -> {
-                val intentForgot = Intent(this, ForgotPassActivity::class.java)
-                startActivity(intentForgot)
-            }
-        }
-    }
-
-    private fun backToFree() {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
-        finish()
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        backToFree()
-        return super.onSupportNavigateUp()
-    }
-}

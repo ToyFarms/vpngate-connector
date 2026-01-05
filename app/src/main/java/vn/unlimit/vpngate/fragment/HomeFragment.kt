@@ -14,7 +14,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout.OnRefreshListener
-import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -247,21 +246,11 @@ class HomeFragment : Fragment(), OnRefreshListener, View.OnClickListener, OnItem
     }
 
     override fun onItemClick(o: Any?, position: Int) {
-        val params = Bundle()
-        params.putString("ip", (o as VPNGateConnection?)!!.ip)
-        params.putString("hostname", o!!.calculateHostName)
-        params.putString("country", o.countryLong)
-        FirebaseAnalytics.getInstance(mContext!!).logEvent("Select_Server", params)
         startDetailAct(o)
     }
 
     override fun onItemLongClick(o: Any?, position: Int) {
         try {
-            val params = Bundle()
-            params.putString("ip", (o as VPNGateConnection?)!!.ip)
-            params.putString("hostname", o!!.calculateHostName)
-            params.putString("country", o.countryLong)
-            FirebaseAnalytics.getInstance(mContext!!).logEvent("Long_Click_Server", params)
             val dialog = newInstance(o)
             if (!mActivity!!.isFinishing && !mActivity!!.isDestroyed) {
                 dialog.show(parentFragmentManager, CopyBottomSheetDialog::class.java.name)

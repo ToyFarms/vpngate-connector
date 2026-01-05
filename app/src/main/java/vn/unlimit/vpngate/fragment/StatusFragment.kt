@@ -18,7 +18,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import de.blinkt.openvpn.VpnProfile
 import de.blinkt.openvpn.core.ConfigParser
@@ -169,35 +168,17 @@ class StatusFragment : Fragment(), View.OnClickListener, VpnStatus.StateListener
             }
             if (!isConnecting) {
                 if (checkStatus()) {
-                    val params = Bundle()
-                    params.putString("type", "disconnect current")
-                    params.putString("ip", mVpnGateConnection!!.ip)
-                    params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                    params.putString("country", mVpnGateConnection!!.countryLong)
-                    FirebaseAnalytics.getInstance(mContext!!).logEvent("Disconnect_VPN", params)
                     stopVpn()
                     isConnecting = false
                     binding.btnOnOff.isActivated = false
                     binding.txtStatus.setText(R.string.disconnecting)
                 } else {
-                    val params = Bundle()
-                    params.putString("type", "connect from status")
-                    params.putString("ip", mVpnGateConnection!!.ip)
-                    params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                    params.putString("country", mVpnGateConnection!!.countryLong)
-                    FirebaseAnalytics.getInstance(mContext!!).logEvent("Connect_VPN", params)
                     prepareVpn()
                     binding.txtStatus.text = getString(R.string.connecting)
                     binding.btnOnOff.isActivated = true
                     isConnecting = true
                 }
             } else {
-                val params = Bundle()
-                params.putString("type", "cancel connect to vpn")
-                params.putString("ip", mVpnGateConnection!!.ip)
-                params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                params.putString("country", mVpnGateConnection!!.countryLong)
-                FirebaseAnalytics.getInstance(mContext!!).logEvent("Cancel_VPN", params)
                 stopVpn()
                 binding.btnOnOff.isActivated = false
                 binding.txtStatus.text = getString(R.string.canceled)
@@ -405,11 +386,6 @@ class StatusFragment : Fragment(), View.OnClickListener, VpnStatus.StateListener
                     ConnectionStatus.LEVEL_AUTH_FAILED -> {
                         isAuthFailed = true
                         binding.btnOnOff.isActivated = false
-                        val params = Bundle()
-                        params.putString("ip", mVpnGateConnection!!.ip)
-                        params.putString("hostname", mVpnGateConnection!!.calculateHostName)
-                        params.putString("country", mVpnGateConnection!!.countryLong)
-                        FirebaseAnalytics.getInstance(mContext!!).logEvent("Connect_Error", params)
                         binding.txtStatus.text = resources.getString(R.string.vpn_auth_failure)
                         isConnecting = false
                     }
