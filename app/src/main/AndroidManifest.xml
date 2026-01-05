@@ -105,10 +105,6 @@
             android:name=".activities.paid.ServerActivity"
             android:theme="@style/AppTheme.PaidServer"/>
         <!-- End paid activities -->
-        <activity
-            android:name="com.google.android.gms.ads.AdActivity"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            tools:replace="android:theme" />
 
         <service
             android:name="de.blinkt.openvpn.core.OpenVPNService"
@@ -148,20 +144,8 @@
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/colorPaidServer" />
         <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3085232976681422~6517719190" />
-        <meta-data
             android:name="firebase_crashlytics_collection_enabled"
             android:value="${crashlyticsCollectionEnabled}" />
-        <meta-data
-            android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
-            android:value="true"/>
-        <meta-data
-            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
-            android:value="true"/>
-        <meta-data
-            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
-            android:value="true"/>
 
     </application>
 

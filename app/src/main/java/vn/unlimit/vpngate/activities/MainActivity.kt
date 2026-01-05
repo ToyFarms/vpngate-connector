@@ -29,16 +29,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.ads.AdListener
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.LoadAdError
 import com.google.android.material.navigation.NavigationView
-import com.google.android.ump.ConsentInformation
-import com.google.android.ump.ConsentRequestParameters
-import com.google.android.ump.FormError
-import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -67,11 +58,9 @@ import vn.unlimit.vpngate.utils.DataUtil.Companion.isOnline
 import vn.unlimit.vpngate.utils.PaidServerUtil
 import vn.unlimit.vpngate.viewmodels.ConnectionListViewModel
 import java.util.Objects
-import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : AppCompatActivity(), View.OnClickListener,
     NavigationView.OnNavigationItemSelectedListener {
-    private val isMobileAdsInitializeCalled = AtomicBoolean(false)
     var connectionListViewModel: ConnectionListViewModel? = null
     var isLoading: Boolean = false
     var doubleBackToExitPressedOnce: Boolean = false
@@ -87,7 +76,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
     var sortType: Int = VPNGateConnectionList.ORDER.ASC
         private set
     private var disallowLoadHome = false
-    private var adView: AdView? = null
     private var isInFront = false
     private lateinit var binding: ActivityMainBinding
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -117,7 +105,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
             }
         }
     }
-    private var consentInformation: ConsentInformation? = null
     private var paidServerUtil: PaidServerUtil? = null
 
     public override fun onSaveInstanceState(outState: Bundle) {
@@ -184,22 +171,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
         } catch (ex: Exception) {
             Log.e(TAG, "Got exception handle support action bar", ex)
         }
-        if (!dataUtil!!.hasAds()) {
-            hideAdContainer()
-            binding.navMain.menu.setGroupVisible(R.id.menu_top, false)
-        }
-
-        checkUMP()
-        if (consentInformation != null) {
-            if (BuildConfig.DEBUG && consentInformation!!.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED) {
-                consentInformation!!.reset()
-            }
-            if (consentInformation!!.canRequestAds()) {
-                initAdMob()
-            }
-        } else {
-            hideAdContainer()
-        }
         addBackPressedHandler()
         lifecycleScope.launch(Dispatchers.IO) {
             disallowLoadHome =
@@ -216,92 +187,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,
             .setVisible(dataUtil!!.lastVPNConnection != null)
     }
 
-    private fun checkUMP() {
-        if (!dataUtil!!.hasAds()) {
-            return
-        }
-//        val debugSettings = ConsentDebugSettings.Builder(this)
-//            .addTestDeviceHashedId("5A08C90645CF1173979B5320A03D1195")
-//            .setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
-//            .build()
-        // Set tag for under age of consent. false means users are not under age
-        // of consent.
-        val params = ConsentRequestParameters.Builder()
-//            .setConsentDebugSettings(debugSettings)
-            .setTagForUnderAgeOfConsent(false)
-            .build()
 
-        consentInformation = UserMessagingPlatform.getConsentInformation(this)
-        consentInformation!!.requestConsentInfoUpdate(
-            this,
-            params,
-            {
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(
-                    this
-                ) { loadAndShowError: FormError? ->
-                    if (loadAndShowError != null) {
-                        // Consent gathering failed.
-                        Log.w(
-                            TAG, String.format(
-                                "%s: %s",
-                                loadAndShowError.errorCode,
-                                loadAndShowError.message
-                            )
-                        )
-                        if (loadAndShowError.errorCode == FormError.ErrorCode.INVALID_OPERATION) {
-                            initAdMob()
-                        }
-                    }
-                    if (consentInformation!!.canRequestAds()) {
-                        initAdMob()
-                    } else if (!isMobileAdsInitializeCalled.get()) {
-                        hideAdContainer()
-                    }
-                }
-            },
-            { requestConsentError: FormError ->
-                // Consent gathering failed.
-                Log.w(
-                    TAG, String.format(
-                        "%s: %s",
-                        requestConsentError.errorCode,
-                        requestConsentError.message
-                    )
-                )
-            })
-    }
 
-    private fun initAdMob() {
-        try {
-            if (dataUtil!!.hasAds()) {
-                if (isMobileAdsInitializeCalled.getAndSet(true)) {
-                    return
-                }
-                adView = AdView(applicationContext)
-                adView!!.setAdSize(AdSize.LARGE_BANNER)
-                adView!!.adUnitId = resources.getString(R.string.admob_banner_bottom_home)
-                adView!!.adListener = object : AdListener() {
-                    override fun onAdFailedToLoad(error: LoadAdError) {
-                        adView!!.visibility = View.GONE
-                        hideAdContainer()
-                        Log.e(TAG, error.toString())
-                    }
-                }
-                (findViewById<View>(R.id.ad_container_home) as RelativeLayout).addView(adView)
-                adView!!.loadAd(AdRequest.Builder().build())
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Got exception when initAdMob", e)
-        }
-    }
-
-    private fun hideAdContainer() {
-        try {
-            binding.adContainerHome.visibility = View.GONE
-        } catch (e: Exception) {
-            Log.e(TAG, "Got exception when hideAdContainer", e)
-        }
-    }
 
     /**
      * Check network and process first state

@@ -31,14 +31,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
-import com.google.android.gms.ads.AdListener
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import de.blinkt.openvpn.VpnProfile
@@ -90,16 +82,12 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
     private lateinit var dataUtil: DataUtil
     private var mVpnGateConnection: VPNGateConnection? = null
     private lateinit var vpnProfile: VpnProfile
-    private var mInterstitialAd: InterstitialAd? = null
-    private lateinit var adViewBellow: AdView
     private lateinit var prefs: SharedPreferences
     private lateinit var listener: OnSharedPreferenceChangeListener
     private var isConnecting = false
     private var isAuthFailed = false
-    private var isShowAds = false
     private var isSSTPConnectOrDisconnecting = false
     private var isSSTPConnected = false
-    private var isFullScreenAdLoaded = false
     private lateinit var binding: ActivityDetailBinding
 
     private fun checkConnectionData() {
@@ -203,34 +191,12 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
         binding.btnL2tpConnect.setOnClickListener(this)
         binding.btnSstpConnect.setOnClickListener(this)
         bindData()
-        initAdMob()
-        initInterstitialAd()
         initSSTP()
         VpnStatus.addStateListener(this)
         VpnStatus.addByteCountListener(this)
         binding.txtStatus.text = ""
     }
 
-    private fun initAdMob() {
-        try {
-            if (dataUtil.hasAds()) {
-                MobileAds.initialize(this)
-                //Banner bellow
-                adViewBellow = AdView(applicationContext)
-                adViewBellow.adUnitId = getString(R.string.admob_banner_bellow_detail)
-                adViewBellow.setAdSize(AdSize.LARGE_BANNER)
-                adViewBellow.adListener = object : AdListener() {
-                    override fun onAdFailedToLoad(error: LoadAdError) {
-                        adViewBellow.visibility = View.GONE
-                    }
-                }
-                binding.lnContentDetail.addView(adViewBellow)
-                adViewBellow.loadAd(AdRequest.Builder().build())
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "initAdMob error", e)
-        }
-    }
 
     public override fun onDestroy() {
         super.onDestroy()
@@ -321,9 +287,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
                     }
 
                     else -> binding.txtCheckIp.visibility = View.GONE
-                }
-                if (dataUtil.getBooleanSetting(DataUtil.USER_ALLOWED_VPN, false) && !isShowAds) {
-                    loadAds()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "UpdateState error", e)
@@ -444,7 +407,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
     }
 
     private fun handleImport(useUdp: Boolean) {
-        loadAds()
         val data = if (useUdp) {
             mVpnGateConnection!!.openVpnConfigDataUdp
         } else {
@@ -489,7 +451,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
     }
 
     private fun handleConnection(useUdp: Boolean) {
-        loadAds()
         if (isSSTPConnected) {
             startVpnSSTPService(ACTION_VPN_DISCONNECT)
         }
@@ -621,7 +582,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
                 params.putString("country", mVpnGateConnection!!.countryLong)
                 FirebaseAnalytics.getInstance(applicationContext)
                     .logEvent("Connect_Via_L2TP", params)
-                loadAds()
                 val l2tpIntent = Intent(this, L2TPConnectActivity::class.java)
                 l2tpIntent.putExtra(BaseProvider.PASS_DETAIL_VPN_CONNECTION, mVpnGateConnection)
                 startActivity(l2tpIntent)
@@ -695,7 +655,6 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
         )
         binding.btnSstpConnect.setText(R.string.cancel_sstp)
         binding.txtStatus.setText(R.string.sstp_connecting)
-        loadAds()
         startVpnSSTPService(ACTION_VPN_CONNECT)
     }
 
@@ -754,49 +713,7 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
         }
     }
 
-    private fun initInterstitialAd() {
-        if (dataUtil.hasAds()) {
-            try {
-                val adRequest = AdRequest.Builder().build()
-                InterstitialAd.load(
-                    applicationContext,
-                    getString(R.string.admob_full_screen_connect),
-                    adRequest,
-                    object : InterstitialAdLoadCallback() {
-                        override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                            isFullScreenAdLoaded = true
-                            mInterstitialAd = interstitialAd
-                            Log.e(TAG, "Full screen ads loaded")
-                        }
 
-                        override fun onAdFailedToLoad(var1: LoadAdError) {
-                            isFullScreenAdLoaded = false
-                            mInterstitialAd = null
-                            Log.e(TAG, String.format("Full screen ads failed to load %s", var1))
-                        }
-                    })
-            } catch (e: Exception) {
-                Log.e(TAG, "initInterstitialAd error", e)
-            }
-        }
-    }
-
-    private fun loadAds() {
-        try {
-            if (dataUtil.hasAds() && dataUtil.getBooleanSetting(
-                    DataUtil.USER_ALLOWED_VPN,
-                    false
-                ) && isFullScreenAdLoaded
-            ) {
-                isShowAds = true
-                if (mInterstitialAd != null) {
-                    mInterstitialAd!!.show(this)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "loadAds error", e)
-        }
-    }
 
     private fun sendConnectVPN() {
         val intent = Intent(BaseProvider.ACTION.ACTION_CONNECT_VPN)
@@ -825,13 +742,7 @@ class DetailActivity : AppCompatActivity(), View.OnClickListener, VpnStatus.Stat
             vpnProfile = cp.convertProfile()
             vpnProfile.mName = mVpnGateConnection!!.getName(useUDP)
             vpnProfile.mCompatMode = App.VPN_PROFILE_COMPAT_MODE_24X
-            if (dataUtil.getBooleanSetting(DataUtil.SETTING_BLOCK_ADS, false)) {
-                vpnProfile.mOverrideDNS = true
-                vpnProfile.mDNS1 = FirebaseRemoteConfig.getInstance()
-                    .getString(getString(R.string.dns_block_ads_primary_cfg_key))
-                vpnProfile.mDNS2 = FirebaseRemoteConfig.getInstance()
-                    .getString(getString(R.string.dns_block_ads_alternative_cfg_key))
-            } else if (dataUtil.getBooleanSetting(DataUtil.USE_CUSTOM_DNS, false)) {
+            if (dataUtil.getBooleanSetting(DataUtil.USE_CUSTOM_DNS, false)) {
                 vpnProfile.mOverrideDNS = true
                 vpnProfile.mDNS1 = dataUtil.getStringSetting(DataUtil.CUSTOM_DNS_IP_1, "8.8.8.8")
                 val dns2 = dataUtil.getStringSetting(DataUtil.CUSTOM_DNS_IP_2, null)

@@ -7,12 +7,6 @@ import android.view.View
 import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
-import com.google.android.gms.ads.AdListener
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.MobileAds
 import vn.unlimit.vpngate.App
 import vn.unlimit.vpngate.R
 import vn.unlimit.vpngate.databinding.ActivityL2tpConnectBinding
@@ -24,7 +18,6 @@ import vn.unlimit.vpngate.utils.DataUtil
 class L2TPConnectActivity : AppCompatActivity(), View.OnClickListener {
     private var mVPNGateConnection: VPNGateConnection? = null
     private var dataUtil: DataUtil = App.instance!!.dataUtil!!
-    private var adView: AdView? = null
     private lateinit var binding: ActivityL2tpConnectBinding
 
     companion object {
@@ -65,7 +58,6 @@ class L2TPConnectActivity : AppCompatActivity(), View.OnClickListener {
                 } else {
                     binding.txtEndPoint.text = mVPNGateConnection?.ip
                 }
-                loadBannerAds()
             } else {
                 @Suppress("DEPRECATION")
                 window.statusBarColor = resources.getColor(R.color.colorPaidServer, theme)
@@ -95,32 +87,6 @@ class L2TPConnectActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private fun loadBannerAds() {
-        try {
-            if (dataUtil.hasAds()) {
-                MobileAds.initialize(this)
-                adView = AdView(applicationContext)
-                adView!!.setAdSize(AdSize.LARGE_BANNER)
-                adView!!.adUnitId = resources.getString(R.string.admob_banner_bottom_l2tp)
-                adView!!.adListener = object : AdListener() {
-                    override fun onAdFailedToLoad(errorCode: LoadAdError) {
-                        binding.adContainerL2tp.visibility = View.GONE
-                    }
-                }
-                val params = RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.WRAP_CONTENT,
-                    RelativeLayout.LayoutParams.WRAP_CONTENT
-                )
-                params.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE)
-                params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE)
-                adView!!.layoutParams = params
-                binding.adContainerL2tp.addView(adView)
-                adView!!.loadAd(AdRequest.Builder().build())
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     override fun onClick(view: View?) {
         if (view == binding.btnBack) {

@@ -222,29 +222,9 @@ class DataUtil(context: Context?) {
     }
 
     fun hasAds(): Boolean {
-        try {
-            return this.isAcceptedPrivacyPolicy && (BuildConfig.FLAVOR == "free") && (adMobId != null)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return true
+        return false
     }
 
-    private val adMobId: String?
-        get() {
-            try {
-                val app = mContext!!.packageManager.getApplicationInfo(
-                    mContext!!.packageName, PackageManager.GET_META_DATA
-                )
-                val bundle = app.metaData
-                if (bundle != null) {
-                    return bundle.getString("com.google.android.gms.ads.APPLICATION_ID")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Got exception when get admobId", e)
-            }
-            return null
-        }
 
     fun hasProInstalled(): Boolean {
         try {
@@ -301,7 +281,6 @@ class DataUtil(context: Context?) {
         const val SETTING_HIDE_OPERATOR_MESSAGE_COUNT: String =
             "SETTING_HIDE_OPERATOR_MESSAGE_COUNT"
         const val USER_ALLOWED_VPN: String = "USER_ALLOWED_VPN"
-        const val SETTING_BLOCK_ADS: String = "SETTING_BLOCK_ADS"
         const val INCLUDE_UDP_SERVER: String = "INCLUDE_UDP_SERVER"
         const val LAST_CONNECT_USE_UDP: String = "LAST_CONNECT_USE_UDP"
         const val USE_CUSTOM_DNS: String = "USE_CUSTOM_DNS"

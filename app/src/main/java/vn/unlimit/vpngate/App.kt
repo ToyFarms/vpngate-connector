@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import androidx.room.Room
-import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.security.ProviderInstaller
 import com.google.android.gms.tasks.Task
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -14,7 +13,6 @@ import vn.unlimit.vpngate.activities.DetailActivity
 import vn.unlimit.vpngate.activities.MainActivity
 import vn.unlimit.vpngate.db.AppDatabase
 import vn.unlimit.vpngate.db.VPNGateItemDao
-import vn.unlimit.vpngate.utils.AppOpenManager
 import vn.unlimit.vpngate.utils.DataUtil
 import vn.unlimit.vpngate.utils.PaidServerUtil
 
@@ -36,16 +34,6 @@ class App : Application() {
         }
         instance = this
         dataUtil = DataUtil(this)
-        if (dataUtil!!.hasAds()) {
-            MobileAds.initialize(this)
-            if (dataUtil!!.isAcceptedPrivacyPolicy && dataUtil!!.getBooleanSetting(
-                    DataUtil.INVITED_USE_PAID_SERVER,
-                    false
-                )
-            ) {
-                appOpenManager = AppOpenManager(this)
-            }
-        }
         // Make notification open DetailActivity
         OpenVPNService.setNotificationActivityClass(
             if (dataUtil!!.getIntSetting(
@@ -74,8 +62,6 @@ class App : Application() {
     companion object {
         private const val TAG = "VpnGateApp"
 
-        @SuppressLint("StaticFieldLeak")
-        var appOpenManager: AppOpenManager? = null
         @JvmStatic
         var instance: App? = null
             private set

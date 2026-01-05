@@ -56,9 +56,6 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
         prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         binding.spinCacheTime.onItemSelectedListener = this
         binding.btnClearCache.setOnClickListener(this)
-        binding.lnBlockAds.setOnClickListener(this)
-        binding.swBlockAds.setChecked(dataUtil.getBooleanSetting(DataUtil.SETTING_BLOCK_ADS, false))
-        binding.swBlockAds.setOnCheckedChangeListener(this)
         binding.lnUdp.setOnClickListener(this)
         binding.swUdp.setChecked(dataUtil.getBooleanSetting(DataUtil.INCLUDE_UDP_SERVER, true))
         binding.swUdp.setOnCheckedChangeListener(this)
@@ -223,10 +220,8 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
     override fun onResume() {
         super.onResume()
         if (App.isImportToOpenVPN) {
-            binding.lnBlockAdsWrap.visibility = View.GONE
             binding.lnDnsWrap.visibility = View.GONE
         } else {
-            binding.lnBlockAdsWrap.visibility = View.VISIBLE
             binding.lnDnsWrap.visibility = View.VISIBLE
         }
     }
@@ -255,7 +250,6 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
     override fun onClick(view: View) {
         when(view) {
             binding.btnClearCache -> clearListServerCache(true)
-            binding.lnBlockAds -> binding.swBlockAds.isChecked = !binding.swBlockAds.isChecked
             binding.lnUdp ->  binding.swUdp.isChecked = !binding.swUdp.isChecked
             binding.lnDns -> binding.swDns.isChecked = !binding.swDns.isChecked
             binding.lnDomain -> binding.swDomain.isChecked = !binding.swDomain.isChecked
@@ -285,11 +279,6 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
         if (switchCompat == binding.swDns) {
             dataUtil.setBooleanSetting(DataUtil.USE_CUSTOM_DNS, isChecked)
             if (isChecked) {
-                if (binding.swBlockAds.isChecked) {
-                    // Turn off Block Ads if custom DNS is enabled
-                    binding.swBlockAds.isChecked = false
-                    dataUtil.setBooleanSetting(DataUtil.SETTING_BLOCK_ADS, false)
-                }
                 binding.lnDnsIp.visibility = View.VISIBLE
                 binding.txtDns1.requestFocus()
                 val imm =
@@ -328,28 +317,6 @@ class SettingFragment : Fragment(), View.OnClickListener, AdapterView.OnItemSele
             Toast.makeText(context, getString(R.string.feature_available_in_pro), Toast.LENGTH_LONG)
                 .show()
             return
-        }
-        //Only save setting in pro version
-        if (switchCompat == binding.swBlockAds) {
-            Toast.makeText(
-                context,
-                getText(R.string.setting_apply_on_next_connection_time),
-                Toast.LENGTH_SHORT
-            ).show()
-            dataUtil.setBooleanSetting(DataUtil.SETTING_BLOCK_ADS, isChecked)
-            if (isChecked && binding.swDns.isChecked) binding.swDns.isChecked = false
-            if (isChecked) {
-                editor.putBoolean(OscPrefKey.DNS_DO_USE_CUSTOM_SERVER.toString(), true)
-                editor.putString(
-                    OscPrefKey.DNS_CUSTOM_ADDRESS.toString(),
-                    FirebaseRemoteConfig.getInstance()
-                        .getString(getString(R.string.dns_block_ads_primary_cfg_key))
-                )
-            } else {
-                editor.putBoolean(OscPrefKey.DNS_DO_USE_CUSTOM_SERVER.toString(), false)
-            }
-            editor.apply()
-            FirebaseAnalytics.getInstance(mContext).logEvent("Change_Block_Ads_Setting", params)
         }
     }
 

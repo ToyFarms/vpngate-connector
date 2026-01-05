@@ -22,7 +22,6 @@ import vn.unlimit.vpngate.activities.paid.PaidServerActivity
 import vn.unlimit.vpngate.activities.paid.ResetPassActivity
 import vn.unlimit.vpngate.databinding.ActivitySplashBinding
 import vn.unlimit.vpngate.provider.PaidServerProvider
-import vn.unlimit.vpngate.utils.AppOpenManager
 import vn.unlimit.vpngate.utils.PaidServerUtil
 import java.util.regex.Pattern
 
@@ -38,7 +37,6 @@ class SplashActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        AppOpenManager.splashActivity = null
         activityResultLauncher?.unregister()
         activityResultLauncher = null
     }
@@ -46,7 +44,6 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(ActivitySplashBinding.inflate(layoutInflater).root)
-        AppOpenManager.splashActivity = this
         activityResultLauncher = registerForActivityResult(
             ActivityResultContracts.StartIntentSenderForResult()
         ) { result ->
@@ -108,9 +105,6 @@ class SplashActivity : AppCompatActivity() {
     }
 
     fun startStartUpActivity(delay: Long = 100) {
-        if (AppOpenManager.isShowingAd) {
-            return
-        }
         val paidServerUtil: PaidServerUtil = App.instance!!.paidServerUtil!!
         val actIntent: Intent =
             if (paidServerUtil.getStartUpScreen() == PaidServerUtil.StartUpScreen.PAID_SERVER) {

@@ -18,10 +18,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import de.blinkt.openvpn.VpnProfile
@@ -76,10 +72,8 @@ class StatusFragment : Fragment(), View.OnClickListener, VpnStatus.StateListener
     private var isConnecting = false
     private var isAuthFailed = false
     private var isDetached = false
-    private var mInterstitialAd: InterstitialAd? = null
     private var vpnProfile: VpnProfile? = null
     private var mContext: Context? = null
-    private var isFullScreenAdsLoaded = false
     private lateinit var binding: FragmentStatusBinding
 
     override fun onCreateView(
@@ -90,7 +84,6 @@ class StatusFragment : Fragment(), View.OnClickListener, VpnStatus.StateListener
         binding = FragmentStatusBinding.inflate(layoutInflater)
         binding.btnOnOff.setOnClickListener(this)
         binding.btnClearStatistics.setOnClickListener(this)
-        loadAdMob()
         bindData()
         onHiddenChanged(true)
         VpnStatus.addStateListener(this)
@@ -161,33 +154,7 @@ class StatusFragment : Fragment(), View.OnClickListener, VpnStatus.StateListener
         }
     }
 
-    private fun loadAdMob() {
-        if (dataUtil!!.getBooleanSetting(DataUtil.USER_ALLOWED_VPN, false)) {
-            val adRequest = AdRequest.Builder().build()
-            InterstitialAd.load(
-                mContext!!,
-                resources.getString(R.string.admob_full_screen_status),
-                adRequest,
-                object : InterstitialAdLoadCallback() {
-                    override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                        mInterstitialAd = interstitialAd
-                        isFullScreenAdsLoaded = true
-                    }
 
-                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                        mInterstitialAd = null
-                    }
-                })
-        }
-    }
-
-    private fun showAds() {
-        if (dataUtil!!.hasAds() && isFullScreenAdsLoaded) {
-            if (mInterstitialAd != null) {
-                mInterstitialAd!!.show(requireActivity())
-            }
-        }
-    }
 
     override fun onClick(view: View) {
         if (view == binding.btnClearStatistics) {
@@ -213,7 +180,6 @@ class StatusFragment : Fragment(), View.OnClickListener, VpnStatus.StateListener
                     binding.btnOnOff.isActivated = false
                     binding.txtStatus.setText(R.string.disconnecting)
                 } else {
-                    showAds()
                     val params = Bundle()
                     params.putString("type", "connect from status")
                     params.putString("ip", mVpnGateConnection!!.ip)
@@ -263,13 +229,7 @@ class StatusFragment : Fragment(), View.OnClickListener, VpnStatus.StateListener
             vpnProfile = cp.convertProfile()
             vpnProfile!!.mName = connectionName
             vpnProfile?.mCompatMode = App.VPN_PROFILE_COMPAT_MODE_24X
-            if (dataUtil!!.getBooleanSetting(DataUtil.SETTING_BLOCK_ADS, false)) {
-                vpnProfile!!.mOverrideDNS = true
-                vpnProfile!!.mDNS1 = FirebaseRemoteConfig.getInstance()
-                    .getString(getString(R.string.dns_block_ads_primary_cfg_key))
-                vpnProfile!!.mDNS2 = FirebaseRemoteConfig.getInstance()
-                    .getString(getString(R.string.dns_block_ads_alternative_cfg_key))
-            } else if (dataUtil!!.getBooleanSetting(DataUtil.USE_CUSTOM_DNS, false)) {
+            if (dataUtil!!.getBooleanSetting(DataUtil.USE_CUSTOM_DNS, false)) {
                 vpnProfile!!.mOverrideDNS = true
                 vpnProfile!!.mDNS1 =
                     dataUtil!!.getStringSetting(DataUtil.CUSTOM_DNS_IP_1, "8.8.8.8")

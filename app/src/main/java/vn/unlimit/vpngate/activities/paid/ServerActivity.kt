@@ -499,13 +499,7 @@ class ServerActivity : EdgeToEdgeActivity(), View.OnClickListener, VpnStatus.Sta
             vpnProfile = cp.convertProfile()
             vpnProfile?.mName = mPaidServer!!.getName(useUDP)
             vpnProfile?.mCompatMode = App.VPN_PROFILE_COMPAT_MODE_24X
-            if (dataUtil.getBooleanSetting(DataUtil.SETTING_BLOCK_ADS, false)) {
-                vpnProfile?.mOverrideDNS = true
-                vpnProfile?.mDNS1 = FirebaseRemoteConfig.getInstance()
-                    .getString(getString(R.string.dns_block_ads_primary_cfg_key))
-                vpnProfile?.mDNS2 = FirebaseRemoteConfig.getInstance()
-                    .getString(getString(R.string.dns_block_ads_alternative_cfg_key))
-            } else if (dataUtil.getBooleanSetting(DataUtil.USE_CUSTOM_DNS, false)) {
+            if (dataUtil.getBooleanSetting(DataUtil.USE_CUSTOM_DNS, false)) {
                 vpnProfile?.mOverrideDNS = true
                 vpnProfile?.mDNS1 = dataUtil.getStringSetting(DataUtil.CUSTOM_DNS_IP_1, "8.8.8.8")
                 val dns2 = dataUtil.getStringSetting(DataUtil.CUSTOM_DNS_IP_2, null)

@@ -1,22 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <defaultsMap>
     <entry>
-        <key>vpn_admob_primary</key>
-        <value>true</value>
-    </entry>
-    <entry>
-        <key>vpn_dns_block_ads_primary</key>
-        <value>176.103.130.130</value>
-    </entry>
-    <entry>
-        <key>vpn_dns_block_ads_alternative</key>
-        <value>176.103.130.131</value>
-    </entry>
-    <entry>
-        <key>vpn_detail_open_ads_interval</key>
-        <value>30</value>
-    </entry>
-    <entry>
         <key>vpn_alternative_api</key>
         <value>https://www.vpngate.net</value>
     </entry>
